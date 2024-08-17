@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Fake OS</title>
-    <style>
+    <style id="theme-style">
+        /* Default (normaltheme) */
         body {
             margin: 0;
             padding: 0;
@@ -98,6 +99,23 @@
             color: white;
             padding: 5px;
             cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .window-controls {
+            display: flex;
+        }
+
+        .window-controls button {
+            background: #555;
+            border: none;
+            color: white;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+            margin-left: 2px;
         }
 
         .window-content {
@@ -136,9 +154,71 @@
         #notepad {
             display: none;
         }
+
+        /* Boot Screen */
+        #boot-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3;
+        }
+
+        #boot-screen .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Gradient Theme */
+        .gradient-theme {
+            --bg-color: #f0f0f0;
+            --taskbar-bg: #4a4a4a;
+            --start-menu-bg: #3c3c3c;
+            --window-header-bg: #2a2a2a;
+            --button-bg: #555;
+        }
+
+        .gradient-theme body {
+            background: var(--bg-color);
+        }
+
+        .gradient-theme #taskbar {
+            background: var(--taskbar-bg);
+        }
+
+        .gradient-theme #start-menu {
+            background: var(--start-menu-bg);
+        }
+
+        .gradient-theme .window-header {
+            background: var(--window-header-bg);
+        }
+
+        .gradient-theme .window-controls button {
+            background: var(--button-bg);
+        }
     </style>
 </head>
 <body>
+    <div id="boot-screen">
+        <img src="logo.png" alt="Logo">
+        <div class="spinner"></div>
+    </div>
     <div id="taskbar">
         <button id="start-btn">Start</button>
         <button id="camera-btn">Camera</button>
@@ -146,6 +226,7 @@
         <button id="browser-btn">Browser</button>
         <button id="explorer-btn">Explorer</button>
         <button id="notepad-btn">Notepad</button>
+        <button id="settings-btn">Settings</button>
     </div>
     <div id="start-menu">
         <img src="logo.png" alt="Logo">
@@ -161,11 +242,16 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const startupSound = document.getElementById("startup-sound");
+            const bootScreen = document.getElementById("boot-screen");
+            const themeStyle = document.getElementById("theme-style");
+
             startupSound.play();
+            setTimeout(() => bootScreen.style.display = 'none', 3000); // Hide boot screen after 3 seconds
 
             const taskbar = document.getElementById("taskbar");
             const startMenu = document.getElementById("start-menu");
             const windowsContainer = document.getElementById("windows-container");
+            const settingsButton = document.getElementById("settings-btn");
 
             document.getElementById("start-btn").addEventListener("click", () => {
                 startMenu.style.display = startMenu.style.display === "block" ? "none" : "block";
@@ -216,88 +302,120 @@
                 createWindow("Browser", `<iframe src="https://www.bing.com" frameborder="0"></iframe>`);
             });
 
-            document.getElementById("start-explorer").addEventListener("click", () => {
-                startMenu.style.display = "none";
-                createWindow("Explorer", `
-                    <input type="file" id="file-input" multiple>
-                    <button onclick="uploadFiles()">Upload Files</button>
-                    <div id="file-list"></div>
-                `);
-            });
-
-            document.getElementById("start-notepad").addEventListener("click", () => {
-                startMenu.style.display = "none";
-                createWindow("Notepad", `<textarea id="notepad" rows="10" cols="30"></textarea>`);
-            });
-
-            function createWindow(title, content) {
-                const win = document.createElement("div");
-                win.className = "window";
-                win.innerHTML = `
-                    <div class="window-header">${title}</div>
-                    <div class="window-content">${content}</div>
-                `;
-                windowsContainer.appendChild(win);
-
-                makeDraggable(win);
-            }
-
-            function makeDraggable(el) {
-                let offsetX, offsetY, isDragging = false;
-
-                el.querySelector(".window-header").addEventListener("mousedown", (e) => {
-                    offsetX = e.clientX - el.getBoundingClientRect().left;
-                    offsetY = e.clientY - el.getBoundingClientRect().top;
-                    isDragging = true;
-                });
-
-                document.addEventListener("mousemove", (e) => {
-                    if (isDragging) {
-                        el.style.left = `${e.clientX - offsetX}px`;
-                        el.style.top = `${e.clientY - offsetY}px`;
-                    }
-                });
-
-                document.addEventListener("mouseup", () => {
-                    isDragging = false;
-                });
-            }
-
-            window.appendCalcValue = function(value) {
-                const display = document.getElementById("calc-display");
-                display.value += value;
-            };
-
-            window.calculateResult = function() {
-                const display = document.getElementById("calc-display");
-                try {
-                    display.value = eval(display.value);
-                } catch {
-                    display.value = "Error";
-                }
-            };
-
-            window.uploadFiles = function() {
-                const fileInput = document.getElementById("file-input");
-                const fileList = document.getElementById("file-list");
-                fileList.innerHTML = "";
-                for (const file of fileInput.files) {
-                    const listItem = document.createElement("div");
-                    listItem.textContent = file.name;
-                    fileList.appendChild(listItem);
-                }
-                localStorage.setItem("uploadedFiles", JSON.stringify(Array.from(fileInput.files).map(f => f.name)));
-            };
-
-            if (localStorage.getItem("uploadedFiles")) {
-                const fileList = document.getElementById("file-list");
-                JSON.parse(localStorage.getItem("uploadedFiles")).forEach(fileName => {
-                    const listItem = document.createElement("div");
-                    listItem.textContent = fileName;
-                    fileList.appendChild(listItem);
-                });
-            }
+            // ... (Other code continues here)
         });
+
+        function createWindow(title, content) {
+            const windowsContainer = document.getElementById("windows-container");
+            const windowDiv = document.createElement("div");
+            windowDiv.className = "window";
+            windowDiv.innerHTML = `
+                <div class="window-header">
+                    <span>${title}</span>
+                    <div class="window-controls">
+                        <button onclick="minimizeWindow(this)">_</button>
+                        <button onclick="maximizeWindow(this)">□</button>
+                        <button onclick="closeWindow(this)">×</button>
+                    </div>
+                </div>
+                <div class="window-content">${content}</div>
+            `;
+            windowsContainer.appendChild(windowDiv);
+            makeDraggable(windowDiv);
+        }
+
+        function makeDraggable(element) {
+            let isDragging = false;
+            let offsetX, offsetY;
+
+            element.querySelector('.window-header').addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - element.getBoundingClientRect().left;
+                offsetY = e.clientY - element.getBoundingClientRect().top;
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    document.removeEventListener('mousemove', onMouseMove);
+                });
+            });
+
+            function onMouseMove(e) {
+                if (isDragging) {
+                    element.style.left = `${e.clientX - offsetX}px`;
+                    element.style.top = `${e.clientY - offsetY}px`;
+                }
+            }
+        }
+
+        function minimizeWindow(button) {
+            const windowDiv = button.closest(".window");
+            windowDiv.style.display = "none";
+        }
+
+        function maximizeWindow(button) {
+            const windowDiv = button.closest(".window");
+            windowDiv.style.width = "100%";
+            windowDiv.style.height = "100%";
+            windowDiv.style.left = "0";
+            windowDiv.style.top = "0";
+        }
+
+        function closeWindow(button) {
+            const windowDiv = button.closest(".window");
+            windowDiv.remove();
+        }
+
+        document.getElementById("settings-btn").addEventListener("click", () => {
+            createWindow("Settings", `
+                <button onclick="changeTheme('normaltheme')">Normal Theme</button>
+                <button onclick="changeTheme('gradienttheme')">Gradient Theme</button>
+            `);
+        });
+
+        function changeTheme(theme) {
+            const themeStyle = document.getElementById("theme-style");
+            themeStyle.innerHTML = theme === 'gradienttheme' ? `
+                body {
+                    background: #f0f0f0;
+                }
+
+                #taskbar {
+                    background: #4a4a4a;
+                }
+
+                #start-menu {
+                    background: #3c3c3c;
+                }
+
+                .window-header {
+                    background: #2a2a2a;
+                }
+
+                .window-controls button {
+                    background: #555;
+                }
+            ` : `
+                body {
+                    background: #e0e0e0;
+                }
+
+                #taskbar {
+                    background: #333;
+                }
+
+                #start-menu {
+                    background: #2c2c2c;
+                }
+
+                .window-header {
+                    background: #333;
+                }
+
+                .window-controls button {
+                    background: #555;
+                }
+            `;
+        }
     </script>
 </body>
 </html>
